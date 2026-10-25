@@ -2,6 +2,9 @@ name: Rio Rise AutoFarm APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -27,16 +30,24 @@ jobs:
 
       - name: Extraer proyecto
         run: |
-          unzip -o RioRiseAutoFarm-cloud.zip
-          find . -name build.gradle -print
+          unzip -o RioRiseAutoFarm-cloud.zip -d proyecto
+          echo "Archivos Gradle encontrados:"
+          find proyecto -type f \( -name build.gradle -o -name build.gradle.kts -o -name settings.gradle -o -name settings.gradle.kts \)
 
-      - name: Compilar
-        run: gradle --no-daemon assembleDebug
+      - name: Compilar APK
+        run: |
+          PROYECTO=$(find proyecto -type f \( -name settings.gradle -o -name settings.gradle.kts \) -printf '%h\n' | head -n 1)
+          if [ -z "$PROYECTO" ]; then
+            echo "ERROR: No se encontró settings.gradle en el ZIP."
+            exit 1
+          fi
+          cd "$PROYECTO"
+          gradle --no-daemon assembleDebug
 
       - name: Guardar APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: RioRiseAutoFarm-APK
-          path: '**/build/outputs/apk/debug/*.apk'
+          path: proyecto/**/build/outputs/apk/debug/*.apk
           if-no-files-found: error
