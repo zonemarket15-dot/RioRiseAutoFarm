@@ -1,0 +1,42 @@
+name: Rio Rise AutoFarm APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Extraer proyecto
+        run: |
+          unzip -o RioRiseAutoFarm-cloud.zip
+          find . -name build.gradle -print
+
+      - name: Compilar
+        run: gradle --no-daemon assembleDebug
+
+      - name: Guardar APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RioRiseAutoFarm-APK
+          path: '**/build/outputs/apk/debug/*.apk'
+          if-no-files-found: error
